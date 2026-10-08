@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { Navbar, ToastContainer } from './components/UI';
 import HomePage from './pages/HomePage';
@@ -7,28 +7,37 @@ import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
 import MessagesPage from './pages/MessagesPage';
 import ProfilePage from './pages/ProfilePage';
-import QuotesPage from './pages/QuotesPage';
+import AttendancePage from './pages/AttendancePage';
+import AcademicsPage from './pages/AcademicsPage';
+import SubjectsPage from './pages/SubjectsPage';
 
 function AppContent() {
   const { isAuthenticated, user, addNotification } = useApp();
   const [currentPage, setCurrentPage] = useState('home');
+  const notifiedUsers = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!isAuthenticated) setCurrentPage('home');
+    else if (currentPage === 'home') setCurrentPage('dashboard');
+  }, [isAuthenticated]);
 
   // Add initial notifications when user logs in
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !notifiedUsers.current.has(user.id)) {
       const timer = setTimeout(() => {
-        addNotification({ title: 'Welcome!', message: `Welcome back, ${user.name}! You have new updates.`, type: 'info' });
-        addNotification({ title: 'Assignment Due', message: 'Database Systems assignment is due tomorrow.', type: 'warning' });
-        addNotification({ title: 'New Message', message: 'Prof. Kumar sent you a message.', type: 'info' });
-        addNotification({ title: 'Score Updated', message: 'Your Algorithms quiz score has been published.', type: 'success' });
+        notifiedUsers.current.add(user.id);
+        addNotification({ title: 'Welcome!', message: `Welcome back, ${user.name}! You have new updates.`, type: 'info', page: 'dashboard' });
+        addNotification({ title: 'Assignment Due', message: 'Database Systems assignment is due tomorrow.', type: 'warning', page: 'academics' });
+        addNotification({ title: 'New Message', message: 'Prof. Kumar sent you a message.', type: 'info', page: 'messages' });
+        addNotification({ title: 'Score Updated', message: 'Your Algorithms quiz score has been published.', type: 'success', page: 'academics' });
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   const navigate = (page: string) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   // Public pages
@@ -49,17 +58,21 @@ function AppContent() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage onNavigate={navigate} isAuthenticated={true} />;
+        return <DashboardPage onNavigate={navigate} />;
       case 'dashboard':
         return <DashboardPage onNavigate={navigate} />;
       case 'students':
-        return <StudentsPage onNavigate={navigate} />;
+        return user?.role === 'student' ? <DashboardPage onNavigate={navigate} /> : <StudentsPage onNavigate={navigate} />;
+      case 'subjects':
+        return <SubjectsPage />;
+      case 'attendance':
+        return <AttendancePage onNavigate={navigate} />;
+      case 'academics':
+        return user?.role === 'student' ? <AcademicsPage onNavigate={navigate} /> : <SubjectsPage />;
       case 'messages':
         return <MessagesPage />;
       case 'profile':
-        return <ProfilePage />;
-      case 'quotes':
-        return <QuotesPage />;
+        return <ProfilePage onNavigate={navigate} />;
       default:
         return <DashboardPage onNavigate={navigate} />;
     }
@@ -68,12 +81,12 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       <Navbar currentPage={currentPage} onNavigate={navigate} />
-      <main className="pb-8">{renderPage()}</main>
+      <main key={currentPage} className="pb-8 page-enter">{renderPage()}</main>
       <ToastContainer />
       {/* Footer */}
       <footer className="border-t border-[var(--border-color)] py-6 px-4 text-center">
         <p className="text-sm text-[var(--text-muted)]">
-          🌿 Verdant Student Success — Empowering academic excellence
+          🌿 Verya Student Success — Empowering academic excellence
         </p>
       </footer>
     </div>

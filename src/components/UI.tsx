@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle, Search, ChevronDown, Menu, Bell, Moon, Sun, LogOut, User, MessageSquare, BookOpen, BarChart3, Home, Settings, Shield, Users, HelpCircle, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle, Search, ChevronDown, Menu, Bell, Moon, Sun, LogOut, User, MessageSquare, BookOpen, BarChart3, Home, Settings, Shield, Users, HelpCircle, ArrowLeft, Award, CalendarDays } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
 // Toast Component
@@ -135,7 +135,15 @@ export function Card({ children, className = '', hover = true, onClick }: { chil
   return (
     <div
       onClick={onClick}
-      className={`bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 ${hover ? 'card-hover' : ''} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      onKeyDown={onClick ? event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 ${hover ? 'card-hover' : ''} ${onClick ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss' : ''} ${className}`}
     >
       {children}
     </div>
@@ -165,9 +173,12 @@ export function ProgressBar({ value, max = 100, color = 'bg-moss' }: { value: nu
 }
 
 // Stat Card
-export function StatCard({ icon, label, value, change, color = 'text-moss' }: { icon: ReactNode; label: string; value: string | number; change?: string; color?: string }) {
+export function StatCard({ icon, label, value, change, color = 'text-moss', onClick }: { icon: ReactNode; label: string; value: string | number; change?: string; color?: string; onClick?: () => void }) {
   return (
-    <Card className="flex items-center gap-4">
+    <Card
+      className={`flex items-center gap-4 ${onClick ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss' : ''}`}
+      onClick={onClick}
+    >
       <div className={`p-3 rounded-xl bg-[var(--bg-primary)] ${color}`}>{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-[var(--text-muted)] font-medium">{label}</p>
@@ -195,7 +206,7 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () =
 }
 
 // Notification Panel
-export function NotificationPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function NotificationPanel({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose: () => void; onNavigate: (page: string) => void }) {
   const { notifications, markNotificationRead } = useApp();
   const panelRef = useRef<HTMLDivElement>(null);
   useClickOutside(panelRef, onClose);
@@ -212,7 +223,11 @@ export function NotificationPanel({ isOpen, onClose }: { isOpen: boolean; onClos
           notifications.slice(0, 10).map(n => (
             <button
               key={n.id}
-              onClick={() => markNotificationRead(n.id)}
+              onClick={() => {
+                markNotificationRead(n.id);
+                onClose();
+                onNavigate(n.page || 'dashboard');
+              }}
               className={`w-full p-3 text-left border-b border-[var(--border-color)] hover:bg-[var(--bg-primary)] transition-colors ${!n.read ? 'bg-moss/5' : ''}`}
             >
               <p className="text-sm font-medium text-[var(--text-primary)]">{n.title}</p>
@@ -226,11 +241,13 @@ export function NotificationPanel({ isOpen, onClose }: { isOpen: boolean; onClos
 }
 
 // User Profile Dropdown
-export function UserDropdown({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function UserDropdown({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose: () => void; onNavigate: (page: string) => void }) {
   const { user, logout, theme, toggleTheme } = useApp();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useClickOutside(dropdownRef, onClose);
+  useClickOutside(dropdownRef, () => {
+    if (!showLogoutConfirm) onClose();
+  });
 
   if (!isOpen || !user) return null;
   return (
@@ -260,7 +277,7 @@ export function UserDropdown({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       <ConfirmDialog
         isOpen={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
-        onConfirm={() => { logout(); onClose(); }}
+        onConfirm={() => { logout(); onClose(); onNavigate('home'); }}
         title="Sign Out"
         message="Are you sure you want to sign out? You'll need to log in again to access your account."
       />
@@ -279,17 +296,24 @@ export function Navbar({ currentPage, onNavigate }: { currentPage: string; onNav
 
   const handleSearchSubmit = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      onNavigate('students');
+      if (user?.role === 'student') {
+        localStorage.setItem('verya_subject_search', searchQuery.trim());
+        onNavigate('subjects');
+      } else {
+        localStorage.setItem('verya_student_search', searchQuery.trim());
+        onNavigate('students');
+      }
+      setSearchQuery('');
       setShowSearch(false);
     }
   };
 
   const navItems = [
-    { id: 'home', icon: <Home size={18} />, label: 'Home' },
     { id: 'dashboard', icon: <BarChart3 size={18} />, label: 'Dashboard' },
-    { id: 'students', icon: <Users size={18} />, label: 'Students' },
+    { id: 'subjects', icon: <BookOpen size={18} />, label: 'Subjects' },
+    { id: 'attendance', icon: <CalendarDays size={18} />, label: 'Attendance' },
+    ...(user?.role !== 'student' ? [{ id: 'students', icon: <Users size={18} />, label: 'Students' }] : []),
     { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages' },
-    { id: 'quotes', icon: <BookOpen size={18} />, label: 'Inspiration' },
     { id: 'profile', icon: <User size={18} />, label: 'Profile' },
   ];
 
@@ -302,9 +326,9 @@ export function Navbar({ currentPage, onNavigate }: { currentPage: string; onNav
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-2 rounded-lg hover:bg-[var(--bg-primary)]" aria-label="Toggle menu">
               <Menu size={20} />
             </button>
-            <button onClick={() => onNavigate('home')} className="flex items-center gap-2">
+            <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2">
               <span className="text-2xl">🌿</span>
-              <span className="font-bold text-lg gradient-text hidden sm:block">Verdant</span>
+              <span className="font-bold text-lg gradient-text hidden sm:block">Verya</span>
             </button>
           </div>
 
@@ -342,8 +366,8 @@ export function Navbar({ currentPage, onNavigate }: { currentPage: string; onNav
             </button>
 
             {/* Dropdowns */}
-            <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-            <UserDropdown isOpen={showUserMenu} onClose={() => setShowUserMenu(false)} />
+            <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} onNavigate={onNavigate} />
+            <UserDropdown isOpen={showUserMenu} onClose={() => setShowUserMenu(false)} onNavigate={onNavigate} />
           </div>
         </div>
 
@@ -357,7 +381,7 @@ export function Navbar({ currentPage, onNavigate }: { currentPage: string; onNav
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchSubmit}
-                placeholder="Search students, courses... (Press Enter)"
+                placeholder={user?.role === 'student' ? 'Search your subjects... (Press Enter)' : 'Search students by name, email, or ID... (Press Enter)'}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:border-moss focus:ring-2 focus:ring-moss/20 transition-all"
                 autoFocus
                 aria-label="Search"

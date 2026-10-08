@@ -32,7 +32,7 @@ export function LoginPage({ onNavigate }: { onNavigate: (page: string) => void }
         <div className="text-center mb-8 animate-slide-up">
           <div className="text-4xl mb-3">🌿</div>
           <h1 className="text-3xl font-bold gradient-text mb-2">Welcome Back</h1>
-          <p className="text-[var(--text-muted)]">Sign in to your Verdant account</p>
+          <p className="text-[var(--text-muted)]">Sign in to your Verya account</p>
         </div>
 
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 sm:p-8 shadow-xl animate-slide-up">
@@ -167,7 +167,7 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: string) => void 
     const success = await signup(name, email, password, role);
     setLoading(false);
     if (success) {
-      addToast('Account created successfully! Welcome to Verdant.', 'success');
+      addToast('Account created successfully! Welcome to Verya.', 'success');
       onNavigate('dashboard');
     } else {
       addToast('An account with this email already exists.', 'error');
@@ -180,7 +180,7 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: string) => void 
         <div className="text-center mb-8 animate-slide-up">
           <div className="text-4xl mb-3">🌿</div>
           <h1 className="text-3xl font-bold gradient-text mb-2">Create Account</h1>
-          <p className="text-[var(--text-muted)]">Join the Verdant community</p>
+          <p className="text-[var(--text-muted)]">Join the Verya community</p>
         </div>
 
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 sm:p-8 shadow-xl animate-slide-up">
@@ -274,7 +274,7 @@ export function RequestAccessPage({ onNavigate }: { onNavigate: (page: string) =
         <div className="text-center mb-8 animate-slide-up">
           <div className="text-4xl mb-3">🔑</div>
           <h1 className="text-3xl font-bold gradient-text mb-2">Request Access</h1>
-          <p className="text-[var(--text-muted)]">Apply for an account to Verdant Student Success</p>
+          <p className="text-[var(--text-muted)]">Apply for an account to Verya Student Success</p>
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 sm:p-8 shadow-xl animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-4">

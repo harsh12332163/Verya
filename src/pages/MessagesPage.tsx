@@ -5,7 +5,11 @@ import { Card, SearchBar, Badge } from '../components/UI';
 
 export default function MessagesPage() {
   const { user, messages, sendMessage, students, addToast } = useApp();
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<string | null>(() => {
+    const contact = localStorage.getItem('verya_message_contact');
+    localStorage.removeItem('verya_message_contact');
+    return contact;
+  });
   const [messageText, setMessageText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,11 +34,14 @@ export default function MessagesPage() {
         { id: 'TCH002', name: 'Dr. Sharma', role: 'teacher', department: 'Mathematics' },
         { id: 'TCH003', name: 'Prof. Patel', role: 'teacher', department: 'Physics' },
         { id: 'ADM001', name: 'Admin Office', role: 'admin', department: 'Administration' },
-        ...students.slice(0, 5).map(s => ({ id: s.id, name: s.name, role: 'student', department: s.department }))
+        ...students.filter(s => s.id !== user.id).map(s => ({ id: s.id, name: s.name, role: 'student', department: s.department }))
       ];
     } else {
       // Teachers/admins can message students
-      return students.slice(0, 15).map(s => ({ id: s.id, name: s.name, role: 'student', department: s.department }));
+      const visibleStudents = user.role === 'teacher'
+        ? students.filter(student => student.courses?.some(course => user.courses?.includes(course)))
+        : students;
+      return visibleStudents.map(s => ({ id: s.id, name: s.name, role: 'student', department: s.department }));
     }
   }, [user, students]);
 
